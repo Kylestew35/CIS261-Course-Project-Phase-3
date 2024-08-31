@@ -1,169 +1,136 @@
-# Kyle Stewart CIS261 Course Project Phase 3
+# Kyle Stewart CIS261 Course Project Phase 4
 
-total_employees = 0
-total_hours = 0.00
-total_gross_pay = 0.00
-total_tax = 0.00
-total_net_pay = 0.00
+class Login:
+    def __init__(self, user_id, password, authorization):
+        self.user_id = user_id
 
-employee_data = []
+        self.password = password
+        self.authorization = authorization
 
-def get_date(prompt):
-    date = input(prompt)
-    return date
+def open_file(file_name):
+    try:
+        with open(file_name, 'a+') as file:
+            file.seek(0)
+            return [line.strip().split('|') for line in file.readlines()]
+    except Exception as e:
+        print(f"Error opening file: {e}")
+        return []
 
-def get_employee_name():
-    employee_name = input("Enter the employee's name (or 'END' to finish): ")
-    return employee_name
+def add_user(file_name, user_data):
+    try:
+        with open(file_name, 'a') as file:
+            while True:
+                user_id = input("Enter User ID (or type 'End' to finish): ")
+                if user_id.lower() == 'end':
+                    break
+                if any(user[0] == user_id for user in user_data):
+                    print("User ID already exists. Please enter a different User ID.")
+                    continue
+                password = input("Enter Password: ")
+                auth_code = input("Enter Authorization Code (Admin/User): ")
+                if auth_code not in ['Admin', 'User']:
+                    print("Invalid Authorization Code. Please enter 'Admin' or 'User'.")
+                    continue
+                file.write(f"{user_id}|{password}|{auth_code}\n")
+                user_data.append([user_id, password, auth_code])
+    except Exception as e:
+        print(f"Error writing to file: {e}")
 
-def get_total_hours():
-    total_hours = float(input("Enter the total hours: "))
-    return total_hours
+def display_users(file_name):
+    try:
+        with open(file_name, 'r') as file:
+            for line in file:
+                user_id, password, auth_code = line.strip().split('|')
+                print(f"User ID: {user_id}, Password: {password}, Authorization Code: {auth_code}")
+    except Exception as e:
+        print(f"Error reading file: {e}")
 
-def get_hourly_rate():
-    hourly_rate = float(input("Enter the hourly rate: "))
-    return hourly_rate
+def login(file_name):
+    user_data = open_file(file_name)
+    user_id = input("Enter User ID: ")
+    password = input("Enter Password: ")
+    user = next((user for user in user_data if user[0] == user_id), None)
+    if not user:
+        print("User ID does not exist.")
+        return None
+    if user[1] != password:
+        print("Incorrect password.")
+        return None
+    return Login(user[0], user[1], user[2])
 
-def get_income_tax_rate():
-    income_tax_rate = float(input("Enter the income tax rate: "))
-    return income_tax_rate / 100  # Convert percentage to decimal
+def get_input(prompt, cast_func=str):
+    return cast_func(input(prompt))
 
 def calculate_pay(hours, rate, tax_rate):
     gross_pay = hours * rate
     income_tax = gross_pay * tax_rate
-    net_pay = gross_pay - income_tax
-    return gross_pay, income_tax, net_pay
+    return gross_pay, income_tax, gross_pay - income_tax
 
 def display_employee_info(from_date, to_date, name, hours, rate, gross, tax_rate, tax, net):
     print(f"{from_date} {to_date} {name} {hours:.2f} {rate:.2f} {gross:.2f} {tax_rate:.1%} {tax:.2f} {net:.2f}")
 
 def display_totals(totals):
-    print()
-    print(f"Total Number of Employees: {totals['employees']}")
+    print(f"\nTotal Number of Employees: {totals['employees']}")
     print(f"Total Hours Worked: {totals['hours']:.2f}")
     print(f"Total Gross Pay: {totals['gross']:.2f}")
     print(f"Total Income Tax: {totals['tax']:.2f}")
     print(f"Total Net Pay: {totals['net']:.2f}")
 
-def write_to_file(data):
-    with open("employee_data.txt", "a") as file:
-        file.write("|".join(map(str, data)) + "\n")
-
-def read_from_file():
-    with open("employee_data.txt", "r") as file:
-        return file.readlines()
-
-def get_emp_name():
-    empname = input("Enter employee name (or 'END' to finish): ")
-    return empname
-
-def get_dates_worked():
-    fromdate = input("Enter Start Date (mm/dd/yyyy): ")
-    todate = input("Enter End Date (mm/dd/yyyy): ")
-    return fromdate, todate
-
-def get_hours_worked():
-    hours = float(input('Enter amount of hours worked: '))
-    return hours
-
-def get_hourly_rate():
-    hourlyrate = float(input("Enter hourly rate: "))
-    return hourlyrate
-
-def get_tax_rate():
-    taxrate = float(input("Enter tax rate: "))
-    return taxrate / 100  # Convert percentage to decimal
-
-def calc_tax_and_net_pay(hours, hourlyrate, taxrate):
-    grosspay = hours * hourlyrate
-    incometax = grosspay * taxrate
-    netpay = grosspay - incometax
-    return grosspay, incometax, netpay
-
-def print_info(EmpDetailList):
-    TotEmployees = 0
-    TotHours = 0.00
-    TotGrossPay = 0.00
-    TotTax = 0.00
-    TotNetPay = 0.00
-    for EmpList in EmpDetailList:
-        fromdate = EmpList[0]
-        todate = EmpList[1]
-        empname = EmpList[2]
-        hours = EmpList[3]
-        hourlyrate = EmpList[4]
-        taxrate = EmpList[5]
-        grosspay, incometax, netpay = calc_tax_and_net_pay(hours, hourlyrate, taxrate)
-        display_employee_info(fromdate, todate, empname, hours, hourlyrate, grosspay, taxrate, incometax, netpay)
-        TotEmployees += 1
-        TotHours += hours
-        TotGrossPay += grosspay
-        TotTax += incometax
-        TotNetPay += netpay
-    EmpTotals["TotEmp"] = TotEmployees
-    EmpTotals["TotHrs"] = TotHours
-    EmpTotals["TotGrossPay"] = TotGrossPay
-    EmpTotals["TotTax"] = TotTax
-    EmpTotals["TotNetPay"] = TotNetPay
-
-def print_totals(EmpTotals):
-    print()
-    print(f"Total Number of Employees: {EmpTotals['TotEmp']}")
-    print(f"Total Hours Worked: {EmpTotals['TotHrs']:.2f}")
-    print(f"Total Gross Pay: {EmpTotals['TotGrossPay']:.2f}")
-    print(f"Total Income Tax: {EmpTotals['TotTax']:.2f}")
-    print(f"Total Net Pay: {EmpTotals['TotNetPay']:.2f}")
-
 def write_employee_information(employee):
     with open("employee_data.txt", "a") as file:
-        file.write('{}|{}|{}|{}|{}|{}\n'.format(employee[0], employee[1], employee[2], employee[3], employee[4], employee[5]))
-
-def get_from_date():
-    valid = False
-    fromdate = ""
-    while not valid:
-        fromdate = input("Enter From Date (mm/dd/yyyy) or 'ALL': ")
-        if (len(fromdate.split('/')) != 3 and fromdate.upper() != 'ALL'):
-            print("Invalid Date Format: ")
-        else:
-            valid = True
-    return fromdate
+        file.write('|'.join(map(str, employee)) + "\n")
 
 def read_employee_information(fromdate):
     EmpDetailList = []
-    with open("employee_data.txt", "r") as file:
+    with open("employee_data.txt", "a+") as file:
+        file.seek(0)
         data = file.readlines()
-    condition = True
-    if fromdate.upper() == 'ALL':
-        condition = False
+    condition = fromdate.upper() != 'ALL'
     for employee in data:
         employee = [x.strip() for x in employee.strip().split("|")]
-        if not condition:
+        if not condition or fromdate == employee[0]:
             EmpDetailList.append([employee[0], employee[1], employee[2], float(employee[3]), float(employee[4]), float(employee[5])])
-        else:
-            if fromdate == employee[0]:
-                EmpDetailList.append([employee[0], employee[1], employee[2], float(employee[3]), float(employee[4]), float(employee[5])])
     return EmpDetailList
 
+def main():
+    file_name = 'users.txt'
+    print("Create users here:")
+    user_data = open_file(file_name)
+    add_user(file_name, user_data)
+    display_users(file_name)
+    print("\nPlease log in:")
+    login_user = login(file_name)
+    if login_user:
+        if login_user.authorization == 'Admin':
+            print("Admin access granted.")
+            EmpDetailList = []
+            EmpTotals = {'employees': 0, 'hours': 0.0, 'gross': 0.0, 'tax': 0.0, 'net': 0.0}
+            while True:
+                empname = get_input("Enter employee name (or 'END' to finish): ")
+                if empname.upper() == "END":
+                    break
+                fromdate, todate = get_input("Enter Start Date (mm/dd/yyyy): "), get_input("Enter End Date (mm/dd/yyyy): ")
+                hours, hourlyrate, taxrate = get_input('Enter amount of hours worked: ', float), get_input("Enter hourly rate: ", float), get_input("Enter tax rate: ", float) / 100
+                grosspay, incometax, netpay = calculate_pay(hours, hourlyrate, taxrate)
+                EmpDetail = [fromdate, todate, empname, hours, hourlyrate, taxrate]
+                write_employee_information(EmpDetail)
+                display_employee_info(fromdate, todate, empname, hours, hourlyrate, grosspay, taxrate, incometax, netpay)
+                EmpTotals['employees'] += 1
+                EmpTotals['hours'] += hours
+                EmpTotals['gross'] += grosspay
+                EmpTotals['tax'] += incometax
+                EmpTotals['net'] += netpay
+            fromdate = get_input("Enter From Date (mm/dd/yyyy) or 'ALL': ")
+            EmpDetailList = read_employee_information(fromdate)
+            display_totals(EmpTotals)
+        else:
+            print("User access granted.")
+            # Users can only view employee data
+            EmpDetailList = read_employee_information('ALL')
+            for EmpList in EmpDetailList:
+                fromdate, todate, empname, hours, hourlyrate, taxrate = EmpList
+                grosspay, incometax, netpay = calculate_pay(hours, hourlyrate, taxrate)
+                display_employee_info(fromdate, todate, empname, hours, hourlyrate, grosspay, taxrate, incometax, netpay)
+
 if __name__ == "__main__":
-    EmpDetailList = []
-    EmpTotals = {}
-    while True:
-        empname = get_emp_name()
-        if (empname.upper() == "END"):
-            break
-        fromdate, todate = get_dates_worked()
-        hours = get_hours_worked()
-        hourlyrate = get_hourly_rate()
-        taxrate = get_tax_rate()
-        print()
-        EmpDetail = [fromdate, todate, empname, hours, hourlyrate, taxrate]
-        write_employee_information(EmpDetail)
-        print()
-        print()
-    fromdate = get_from_date()  # User is prompted to enter the specific date or "ALL" here
-    EmpDetailList = read_employee_information(fromdate)
-    print()
-    print_info(EmpDetailList)
-    print()
-    print_totals(EmpTotals)
+    main()
